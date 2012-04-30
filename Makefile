@@ -8,17 +8,17 @@ SED_VER_REPLACE = 's/__version__/"${VER_OFFICIAL}"/g'
 SED_VER_API = sed ${SED_VER_REPLACE}
 SED_INPLACE_EXT = "whyunowork"
 deploy: VER = sed "s/v@VERSION/${VER_OFFICIAL} ${HEAD_SHA}/"
-deploy: VER_MIN = "/*! jQuery Mobile v${VER_OFFICIAL} ${HEAD_SHA} jquerymobile.com | jquery.org/license */"
+deploy: VER_MIN = "/*! jQuery Swipe Events v${VER_OFFICIAL} ${HEAD_SHA} jQuery mobile fork - jquerymobile.com | jquery.org/license */"
 
 # The output folder for the finished files
 OUTPUT = compiled
 
 # The name of the files
-NAME = jquery.mobile
-BASE_NAME = jquery.mobile
+NAME = jquery.swipeevents
+BASE_NAME = jquery.swipeevents
 THEME_FILENAME = jquery.mobile.theme
 STRUCTURE = jquery.mobile.structure
-deploy: NAME = jquery.mobile-${VER_OFFICIAL}
+deploy: NAME = jquery.swipeevents-${VER_OFFICIAL}
 deploy: THEME_FILENAME = jquery.mobile.theme-${VER_OFFICIAL}
 deploy: STRUCTURE = jquery.mobile.structure-${VER_OFFICIAL}
 
@@ -125,7 +125,7 @@ js: init
 	${RUN_JS} \
 		external/r.js/dist/r.js \
 	 	-o baseUrl="js" \
-		name=jquery.mobile \
+		name=jquery.swipeevents \
 		exclude=jquery,../external/requirejs/order,../external/requirejs/depend,../external/requirejs/text,../external/requirejs/text!../version.txt \
 		out=${OUTPUT}/${NAME}.compiled.js \
 		pragmasOnSave.jqmBuildExclude=true \
