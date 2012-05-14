@@ -2,11 +2,10 @@
  * mobile init tests
  */
 (function($){
-	var mobilePage = undefined,
+	var loader, mobilePage = undefined,
 			libName = 'jquery.mobile.init.js',
 			coreLib = 'jquery.mobile.core.js',
 			extendFn = $.extend,
-			originalLoadingMessage = $.mobile.loadingMessage,
 			setGradeA = function(value) { $.mobile.gradeA = function(){ return value; }; },
 			reloadCoreNSandInit = function(){
 				$.testHelper.reloadLib(coreLib);
@@ -20,26 +19,28 @@
 			// NOTE reset for gradeA tests
 			$('html').removeClass('ui-mobile');
 
-			// TODO add post reload callback
-			$('.ui-loader').remove();
+			$.mobile.loading( 'hide' );
 		},
+
 		teardown: function(){
 			$.extend = extendFn;
-
-			// NOTE reset for showPageLoadingMsg/hidePageLoadingMsg tests
-			$('.ui-loader').remove();
 
 			// clear the classes added by reloading the init
 			$("html").attr('class', '');
 
-			$.mobile.loadingMessage = originalLoadingMessage;
+			$.mobile.loadingMessage =
+				$.mobile.loadingMessageTheme =
+				$.mobile.loadingMessageTextVisible = undefined;
 		}
 	});
 
 	// NOTE important to use $.fn.one here to make sure library reloads don't fire
 	//      the event before the test check below
-	$(document).one("mobileinit", function(){
+	$(document).one( "mobileinit", function(){
 		mobilePage = $.mobile.page;
+
+		$.mobile.loader.prototype.options.text = "mobileinit";
+		$.mobile.loader.prototype.options.textVisible = true;
 	});
 
 	// NOTE for the following two tests see index html for the binding
@@ -90,8 +91,6 @@
 			same( $.mobile.useFastClick, false , "fast click is set to false after init" );
 			$.mobile.useFastClick = true;
 		});
-
-
 
 		var findFirstPage = function() {
 			return $(":jqmData(role='page')").first();
@@ -150,11 +149,24 @@
 			same($("#bar").jqmData('url'), "bak");
 		});
 
-		test( "showPageLoadingMsg doesn't add the dialog to the page when loading message is false", function(){
+		test( "prototype options are used for mobile loader", function() {
+			$.mobile.loading( 'show' );
+
+			same( $('.ui-loader').text(), "mobileinit", "prototype options work" );
+		});
+
+		test( "showPageLoadingMsg does not show the text when the loading message is false", function(){
 			$.mobile.loadingMessage = false;
 			$.mobile.showPageLoadingMsg();
 
-			ok(!$(".ui-loader").length, "no ui-loader element");
+			same($(".ui-loader h1").text(), "", "no loading message present");
+		});
+
+		test( "showPageLoadingMsg doesn't hide the text loading message is true", function(){
+			$.mobile.loadingMessageTextVisible = true;
+			$.mobile.showPageLoadingMsg();
+
+			ok($(".ui-loader").hasClass( "ui-loader-verbose" ), "displaying text");
 		});
 
 		test( "hidePageLoadingMsg doesn't add the dialog to the page when loading message is false", function(){
@@ -172,13 +184,6 @@
 			same($(".ui-loading").length, 1, "page should be in the loading state");
 		});
 
-		test( "page loading should contain default loading message", function(){
-			reloadCoreNSandInit();
-			$.mobile.showPageLoadingMsg();
-
-			same($(".ui-loader h1").text(), "loading");
-		});
-
 		test( "page loading should contain custom loading message", function(){
 			$.mobile.loadingMessage = "foo";
 			$.testHelper.reloadLib(libName);
@@ -194,7 +199,6 @@
 			same($(".ui-loader h1").text(), "bar");
 		});
 
-
 		test( "page loading should contain custom loading message when used in param object", function() {
 			$.mobile.showPageLoadingMsg({ text: "bak" });
 			same($(".ui-loader h1").text(), "bak", "loader has custom message 'bak'");
@@ -205,9 +209,21 @@
 			ok($(".ui-loader").hasClass( "ui-body-l"), "loader has theme l");
 		});
 
-		test( "page loading should contain new html when provided", function() {
-			$.mobile.showPageLoadingMsg({ html: "<div class='foo'>foo</div>" });
+		test( "page loading should contain new html when provided, prefers passed param", function() {
+			$.mobile.showPageLoadingMsg({
+				html: "<div class=\"foo\"></div>"
+			});
+
 			same($(".ui-loader > div.foo").length, 1, "loader has a custom html");
+		});
+
+		test( "test the loading config object precedence", function() {
+			$.mobile.loadingMessage = "fozzle";
+			$.mobile.loadingMessageTheme = "x";
+
+			$.mobile.showPageLoadingMsg();
+			ok($(".ui-loader").hasClass( "ui-body-x" ), "has theme x");
+			same($(".ui-loader h1").text(), "fozzle", "has text fozzle in loading config object");
 		});
 
 		// NOTE the next two tests work on timeouts that assume a page will be
