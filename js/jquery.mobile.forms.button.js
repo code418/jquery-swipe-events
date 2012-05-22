@@ -1,6 +1,6 @@
 //>>excludeStart("jqmBuildExclude", pragmas.jqmBuildExclude);
 //>>description: Custom-styled native input/buttons
-//>>label: Buttons: Input or button-based 
+//>>label: Buttons: Input or button-based
 //>>group: Forms
 //>>css: ../css/themes/default/jquery.mobile.theme.css,../css/structure/jquery.mobile.button.css
 
@@ -13,12 +13,10 @@ $.widget( "mobile.button", $.mobile.widget, {
 		theme: null,
 		icon: null,
 		iconpos: null,
-		inline: false,
 		corners: true,
 		shadow: true,
 		iconshadow: true,
-		initSelector: "button, [type='button'], [type='submit'], [type='reset'], [type='image']",
-		mini: false
+		initSelector: "button, [type='button'], [type='submit'], [type='reset'], [type='image']"
 	},
 	_create: function() {
 		var $el = this.element,
@@ -26,14 +24,19 @@ $.widget( "mobile.button", $.mobile.widget, {
 			o = this.options,
 			type,
 			name,
+			inline = o.inline || $el.jqmData( "inline" ),
+			mini = o.mini || $el.jqmData( "mini" ),
 			classes = "",
 			$buttonPlaceholder;
 
 		// if this is a link, check if it's been enhanced and, if not, use the right function
 		if( $el[ 0 ].tagName === "A" ) {
-	 	 	!$el.hasClass( "ui-btn" ) && $el.buttonMarkup();
-	 	 	return;
- 	 	}
+			if( !$el.hasClass( "ui-btn" ) ) {
+				$el.buttonMarkup();
+			}
+
+			return;
+		}
 
 		// get the inherited theme
 		// TODO centralize for all widgets
@@ -61,11 +64,11 @@ $.widget( "mobile.button", $.mobile.widget, {
 				theme: o.theme,
 				icon: o.icon,
 				iconpos: o.iconpos,
-				inline: o.inline,
+				inline: inline,
 				corners: o.corners,
 				shadow: o.shadow,
 				iconshadow: o.iconshadow,
-				mini: o.mini
+				mini: mini
 			})
 			.addClass( classes )
 			.append( $el.addClass( "ui-btn-hidden" ) );
