@@ -17,6 +17,57 @@
 		$.mobile.activePage.find("li a").first().click();
 	};
 
+	// Check if two chunks of DOM are identical
+	domEqual = function( l, r ) {
+		var idx, idxAttr, lattr, rattr;
+
+		// If the lengths of the two jQuery objects are different, the DOM
+		// must be different so don't bother checking
+		if ( l.length === r.length ) {
+			// Otherwise, examine each element
+			for ( idx = 0 ; idx < l.length ; idx++ ) {
+				l = l.eq( idx ); r = r.eq( idx );
+
+				// If the tagName is different the DOM must be different
+				if ( l[ 0 ].tagName !== r[ 0 ].tagName ){
+					return false;
+				}
+
+				// Otherwise, check the attributes
+				if ( l[ 0 ].attributes.length === r[ 0 ].attributes.length ) {
+					// convert attributes array to dictionary, because the order
+					// of the attributes may be different between l and r
+					lattr = {};
+					rattr = {};
+					for ( idxAttr = 0 ; idxAttr < l[ 0 ].attributes.length ; idxAttr++ ) {
+						lattr[ l[ 0 ].attributes[ idxAttr ].name ] = l[ 0 ].attributes[ idxAttr ].value;
+						rattr[ r[ 0 ].attributes[ idxAttr ].name ] = r[ 0 ].attributes[ idxAttr ].value;
+					}
+
+					// Check if each attribute in lattr has the same value in rattr
+					for ( idxAttr in lattr ) {
+						if ( rattr[ idxAttr ] !== lattr[ idxAttr ] ) {
+							return false;
+						}
+					}
+
+					// If so, compare the children of l and r recursively
+					if ( !domEqual( $( l[ 0 ] ).children(), $( r[ 0 ] ).children() ) ) {
+						return false;
+					}
+				} else {
+					return false;
+				}
+				l = l.end(); r = r.end();
+			}
+			if ( idx === l.length ) {
+				return true;
+			}
+		}
+
+		return false;
+	};
+
 	module(libName, {
 		teardown: function(){
 			$.mobile.defaultDialogTransition = originalDefaultDialogTrans;
@@ -61,7 +112,7 @@
 			},
 
 			function(){
-				same($("#select-choice-few-menu").parent(".ui-selectmenu-hidden").length, 1);
+				deepEqual($("#select-choice-few-menu").parent().parent(".ui-popup-hidden").length, 1);
 				start();
 			}
 		], 1000);
@@ -81,7 +132,7 @@
 					fn: $.mobile.defaultTransitionHandler,
 
 					before: function(name){
-						same(name, $.mobile.defaultDialogTransition);
+						deepEqual(name, $.mobile.defaultDialogTransition);
 					}
 				});
 
@@ -93,26 +144,6 @@
 
 			start
 		]);
-	});
-
-	asyncTest( "custom select menu always renders screen from the left", function(){
-		var select;
-
-		expect( 1 );
-
-		$.testHelper.sequence([
-			resetHash,
-
-			function(){
-				select = $("ul#select-offscreen-menu");
-				$("#select-offscreen-container a").trigger("click");
-			},
-
-			function(){
-				ok(select.offset().left >= 30, "offset from the left is greater than or equal to 30px" );
-				start();
-			}
-		], 1000);
 	});
 
 	asyncTest( "selecting an item from a dialog sized custom select menu leaves no dialog hash key", function(){
@@ -131,7 +162,7 @@
 			},
 
 			function(){
-				same(location.hash.indexOf(dialogHashKey), -1);
+				deepEqual(location.hash.indexOf(dialogHashKey), -1);
 				start();
 			}
 		]);
@@ -171,6 +202,10 @@
 		}
 	});
 
+	test( "a popup containing a non-native select will cause the select to be rendered as native", function() {
+		ok( $( "#select-choice-inside-popup-menu" ).length === 0, "non-native select inside popup has no generated menu" );
+	});
+
 	asyncTest( "a large select option should not overflow", function(){
 		// https://github.com/jquery/jquery-mobile/issues/1338
 		var menu, select;
@@ -193,6 +228,30 @@
 		], 500);
 	});
 
+	asyncTest( "focus is transferred to a menu item when the menu is opened",function() {
+		var select, menu, button;
+
+		expect( 1 );
+
+		$.testHelper.sequence([
+			function() {
+				select = $( "#select-choice-menu-focus-test" );
+				menu = $( "#select-choice-menu-focus-test-menu" );
+				button = select.find( "a" );
+				button.trigger( "click" );
+			},
+
+			function() {
+				ok( $( document.activeElement ).parents( "#select-choice-menu-focus-test-menu" ).length > 0, "item in open select menu (" + menu.length + ") has focus" );
+				$(".ui-popup-screen:not(.ui-screen-hidden)").trigger( "click" );
+			},
+
+			function() {
+				start();
+			}
+		], 5000);
+	});
+
 	asyncTest( "using custom refocuses the button after close", function() {
 		var select, button, triggered = false;
 
@@ -213,14 +272,14 @@
 					triggered = true;
 				});
 
-				$(".ui-selectmenu-screen:not(.ui-screen-hidden)").trigger("click");
+				$(".ui-popup-screen:not(.ui-screen-hidden)").trigger("click");
 			},
 
 			function(){
 				ok(triggered, "focus is triggered");
 				start();
 			}
-		], 5000);
+		], 1500);
 	});
 
 	asyncTest( "selected items are highlighted", function(){
@@ -265,16 +324,16 @@
 		button = select.siblings( "a" ).first();
 
 		select.selectmenu( 'disable' );
-		same( select.attr('disabled'), "disabled", "select is disabled" );
+		deepEqual( select.attr('disabled'), "disabled", "select is disabled" );
 		ok( button.hasClass("ui-disabled"), "disabled class added" );
-		same( button.attr('aria-disabled'), "true", "select is disabled" );
-		same( select.selectmenu( 'option', 'disabled' ), true, "disbaled option set" );
+		deepEqual( button.attr('aria-disabled'), "true", "select is disabled" );
+		deepEqual( select.selectmenu( 'option', 'disabled' ), true, "disbaled option set" );
 
 		select.selectmenu( 'enable' );
-		same( select.attr('disabled'), undefined, "select is disabled" );
+		deepEqual( select.attr('disabled'), undefined, "select is disabled" );
 		ok( !button.hasClass("ui-disabled"), "disabled class added" );
-		same( button.attr('aria-disabled'), "false", "select is disabled" );
-		same( select.selectmenu( 'option', 'disabled' ), false, "disbaled option set" );
+		deepEqual( button.attr('aria-disabled'), "false", "select is disabled" );
+		deepEqual( select.selectmenu( 'option', 'disabled' ), false, "disbaled option set" );
 	});
 
 	asyncTest( "adding options and refreshing a custom select changes the options list", function(){
@@ -289,8 +348,8 @@
 			},
 
 			function() {
-				same( $( ".ui-selectmenu.in ul" ).text(), "default" );
-				$( ".ui-selectmenu-screen" ).click();
+				deepEqual( $( ".ui-popup-container:not(.ui-popup-hidden) .ui-selectmenu ul" ).text(), "default" );
+				$( ".ui-popup-screen" ).click();
 			},
 
 			function() {
@@ -304,8 +363,8 @@
 			},
 
 			function() {
-				same( $( ".ui-selectmenu.in ul" ).text(), text );
-				$( ".ui-selectmenu-screen" ).click();
+				deepEqual( $( ".ui-popup-container:not(.ui-popup-hidden) .ui-selectmenu ul" ).text(), text );
+				$( ".ui-popup-screen" ).click();
 			},
 
 			start
@@ -328,8 +387,8 @@
 
 	// issue #2547
 	test( "custom select list item links have encoded option text values", function() {
-		$( "#encoded-option" ).data( 'selectmenu' )._buildList();
-		same(window.encodedValueIsDefined, undefined);
+		$( "#encoded-option" ).data( 'mobile-selectmenu' )._buildList();
+		deepEqual(window.encodedValueIsDefined, undefined);
 	});
 
 	// not testing the positive case here since's it's obviously tested elsewhere
@@ -348,7 +407,7 @@
 			},
 
 			function() {
-				same($.mobile.activePage.find( ".ui-title" ).text(), $label.text());
+				deepEqual($.mobile.activePage.find( ".ui-title" ).text(), $label.text());
 				window.history.back();
 			},
 
@@ -370,7 +429,7 @@
 			},
 
 			function() {
-				same($.mobile.activePage.find( ".ui-title" ).text(), $label.text());
+				deepEqual($.mobile.activePage.find( ".ui-title" ).text(), $label.text());
 				window.history.back();
 			},
 
@@ -379,13 +438,13 @@
 	});
 
 	test( "a disabled custom select should still be enhanced as custom", function() {
-		$("#select-disabled-enhancetest").selectmenu("enable").siblings("a").click();
+		$("#select-disabled-enhancetest").selectmenu("enable").selectmenu("open");
 
-		var menu = $(".ui-selectmenu").not( ".ui-selectmenu-hidden" );
+		var menu = $(".ui-selectmenu").not( ".ui-popup-hidden" );
 		ok( menu.text().indexOf("disabled enhance test") > -1, "the right select is showing" );
 	});
 
-	test( "selected option 1classes are persisted to the button text", function() {
+	test( "selected option classes are persisted to the button text", function() {
 		var $select = $( "#select-preserve-option-class" ),
 			selectedOptionClasses = $select.find( "option:selected" ).attr( "class" );
 
@@ -399,9 +458,61 @@
 		deepEqual( $select.parent().find( ".ui-btn-text > span" ).attr( "class" ), selectedOptionClasses );
 	});
 
-	test( "multple select text values are aggregated in the button text", function() {
+	test( "multiple select text values are aggregated in the button text", function() {
 		var $select = $( "#select-aggregate-option-text" );
 
 		deepEqual( "Standard: 7 day, Rush: 3 days", $select.parent().find( ".ui-btn-text" ).text() );
 	});
+
+	asyncTest( "destroying a select menu leaves no traces", function() {
+		$.testHelper.pageSequence( [
+			function() { $.mobile.changePage( "#destroyTest" ); },
+			// Check if two chunks of DOM are identical
+			function() {
+				var unenhancedSelect = $(
+						"<select data-" + ( $.mobile.ns || "" ) + "native-menu='true'>" +
+						"<option>Title</option>" +
+						"<option value='option1'>Option 1</option>" +
+						"<option value='option2'>Option 2</option>" +
+						"</select>"),
+					unenhancedSelectClone = unenhancedSelect.clone();
+
+				$( "#destroyTest" ).append( unenhancedSelectClone );
+				unenhancedSelectClone.selectmenu();
+				unenhancedSelectClone.selectmenu( "destroy" );
+				unenhancedSelectClone.remove();
+
+				deepEqual( $( "#destroyTest" ).children().length, 0, "After adding, enhancing, destroying, and removing the select menu, the page is empty" );
+				ok( domEqual( unenhancedSelect, unenhancedSelectClone ), "DOM for select after enhancement/destruction is equal to DOM for unenhanced select" );
+			},
+			function() { $.mobile.back(); },
+			function() { start(); }
+		]);
+	});
+
+	asyncTest( "destroying a custom select menu leaves no traces", function() {
+		$.testHelper.pageSequence( [
+			function() { $.mobile.changePage( "#destroyTestCustom" ); },
+			function() {
+				var unenhancedSelect = $(
+						"<select data-" + ( $.mobile.ns || "" ) + "native-menu='false'>" +
+						"<option>Title</option>" +
+						"<option value='option1'>Option 1</option>" +
+						"<option value='option2'>Option 2</option>" +
+						"</select>"),
+					unenhancedSelectClone = unenhancedSelect.clone();
+
+				$( "#destroyTestCustom" ).append( unenhancedSelectClone );
+				unenhancedSelectClone.selectmenu();
+				unenhancedSelectClone.selectmenu( "destroy" );
+				unenhancedSelectClone.remove();
+
+				deepEqual( $( "#destroyTestCustom" ).children().length, 0, "After adding, enhancing, destroying, and removing the select menu, the page is empty" );
+				ok( domEqual( unenhancedSelect, unenhancedSelectClone ), "DOM for select after enhancement/destruction is equal to DOM for unenhanced select" );
+			},
+			function() { $.mobile.back(); },
+			function() { start(); }
+		]);
+	});
+
 })(jQuery);

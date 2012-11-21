@@ -2,9 +2,13 @@
  * mobile dialog unit tests
  */
 (function($) {
+	var home = $.mobile.path.parseUrl(location.pathname).directory,
+		homeWithSearch = home + location.search;
+
 	module( "jquery.mobile.dialog.js", {
 		setup: function() {
 			$.mobile.page.prototype.options.contentTheme = "d";
+			$.testHelper.navReset( homeWithSearch );
 		}
 	});
 
@@ -12,10 +16,6 @@
 		expect( 2 );
 
 		$.testHelper.pageSequence([
-			function() {
-				$.mobile.changePage( $( "#mypage" ) );
-			},
-
 			function() {
 				//bring up the dialog
 				$( "#foo-dialog-link" ).click();
@@ -32,7 +32,39 @@
 			},
 
 			function() {
-				ok( !/&ui-state=dialog/.test(location.hash), "ui-state=dialog !~ location.hash" );
+				ok( !(/&ui-state=dialog/.test(location.hash)), "ui-state=dialog !~ location.hash" );
+				start();
+			}
+		]);
+	});
+
+	asyncTest( "Test option data-close-btn", function() {
+		expect( 5 );
+
+		$.testHelper.pageSequence([
+			function() {
+				// bring up the dialog
+				$( "#close-btn-test-link" ).click();
+			},
+
+			function() {
+				var a = $( "#close-btn-test .ui-header a" );
+				deepEqual( a.length, 0, "Initially, the dialog header has no anchor elements (option value 'none')" );
+
+				$( "#close-btn-test" ).dialog( "option", "closeBtn", "left" );
+				a = $( "#close-btn-test .ui-header a" );
+				deepEqual( a.length, 1, "The dialog header has eactly one anchor element when the option value is set to 'left'" );
+				ok( a.hasClass( "ui-btn-left" ), "The close button has class ui-btn-left when the closeBtn option is set to 'left'" );
+
+				$( "#close-btn-test" ).dialog( "option", "closeBtn", "right" );
+				a = $( "#close-btn-test .ui-header a" );
+				deepEqual( a.length, 1, "The dialog header has eactly one anchor element when the option value is set to 'right'" );
+				ok( a.hasClass( "ui-btn-right" ), "The close button has class ui-btn-right when the closeBtn option is set to 'right'" );
+
+				$( "#close-btn-test" ).dialog( "close" );
+			},
+
+			function() {
 				start();
 			}
 		]);
@@ -76,7 +108,7 @@
 
 	asyncTest( "dialog element with no theming", function() {
 		expect(4);
-		
+
 		$.testHelper.pageSequence([
 			function() {
 				$.mobile.changePage( $( "#mypage" ) );
@@ -159,24 +191,34 @@
 			}
 		]);
 	});
-	
-	
+
+
 	asyncTest( "page container is updated to dialog overlayTheme at pagebeforeshow", function(){
-		
+		var pageTheme;
+
 		expect( 1 );
-		
-		var pageTheme = "ui-overlay-" + $.mobile.activePage.dialog( "option", "overlayTheme" );
 
-		$.mobile.pageContainer.removeClass( pageTheme );
-		
-		$.mobile.activePage
-			.bind( "pagebeforeshow", function(){
-				ok( $.mobile.pageContainer.hasClass( pageTheme ), "Page container has the same theme as the dialog overlayTheme on pagebeforeshow" );
-				start();
-			})
-			.trigger( "pagebeforeshow" );
+		$.testHelper.pageSequence([
+			function() {
+				$.mobile.changePage( "#mypage" );
+			},
 
-	} );
-	
-	
+			function() {
+				//bring up the dialog
+				$( "#foo-dialog-link" ).click();
+			},
+
+			function() {
+				pageTheme = "ui-overlay-" + $.mobile.activePage.dialog( "option", "overlayTheme" );
+
+				$.mobile.pageContainer.removeClass( pageTheme );
+
+				$.mobile.activePage
+					.bind( "pagebeforeshow", function(){
+						ok( $.mobile.pageContainer.hasClass( pageTheme ), "Page container has the same theme as the dialog overlayTheme on pagebeforeshow" );
+						start();
+					}).trigger( "pagebeforeshow" );
+			}
+		]);
+	});
 })( jQuery );

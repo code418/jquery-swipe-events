@@ -5,14 +5,19 @@
 
 
 define( [ "jquery", "./jquery.mobile.core", "./jquery.mobile.support", "./jquery.mobile.navigation",
-	"./jquery.mobile.navigation.pushstate", "./jquery.mobile.loader", "../external/requirejs/depend!./jquery.hashchange[jquery]" ], function( $ ) {
+	"./jquery.mobile.navigation.pushstate", "./widgets/loader", "./jquery.mobile.vmouse", "depend!./jquery.hashchange[jquery]" ], function( $ ) {
 //>>excludeEnd("jqmBuildExclude");
-( function( $, window, undefined ) {
+(function( $, window, undefined ) {
 	var	$html = $( "html" ),
 			$head = $( "head" ),
 			$window = $( window );
 
- 	// trigger mobileinit event - useful hook for configuring $.mobile settings before they're used
+	//remove initial build class (only present on first pageshow)
+	function hideRenderingClass() {
+		$html.removeClass( "ui-mobile-rendering" );
+	}
+
+	// trigger mobileinit event - useful hook for configuring $.mobile settings before they're used
 	$( window.document ).trigger( "mobileinit" );
 
 	// support conditions
@@ -33,18 +38,18 @@ define( [ "jquery", "./jquery.mobile.core", "./jquery.mobile.support", "./jquery
 
 	// This is a fallback. If anything goes wrong (JS errors, etc), or events don't fire,
 	// this ensures the rendering class is removed after 5 seconds, so content is visible and accessible
-	setTimeout( hideRenderingClass, 5000 );
+	setTimeout( function() {
+		hideRenderingClass();
+	}, 5000 );
 
-	//remove initial build class (only present on first pageshow)
-	function hideRenderingClass(){
-		$html.removeClass( "ui-mobile-rendering" );
-	}
-
-	$.extend($.mobile, {
+	$.extend( $.mobile, {
 		// find and enhance the pages in the dom and transition to the first page.
 		initializePage: function() {
 			// find present pages
-			var $pages = $( ":jqmData(role='page'), :jqmData(role='dialog')" );
+			var path = $.mobile.path,
+				$pages = $( ":jqmData(role='page'), :jqmData(role='dialog')" ),
+				hash = path.stripHash( path.stripQueryParams(path.parseLocation().hash) ),
+				hashPage = document.getElementById( hash );
 
 			// if no pages are found, create one with body's inner html
 			if ( !$pages.length ) {
@@ -53,10 +58,10 @@ define( [ "jquery", "./jquery.mobile.core", "./jquery.mobile.support", "./jquery
 
 			// add dialogs, set data-url attrs
 			$pages.each(function() {
-				var $this = $(this);
+				var $this = $( this );
 
 				// unless the data url is already set set it to the pathname
-				if ( !$this.jqmData("url") ) {
+				if ( !$this.jqmData( "url" ) ) {
 					$this.attr( "data-" + $.mobile.ns + "url", $this.attr( "id" ) || location.pathname + location.search );
 				}
 			});
@@ -77,19 +82,36 @@ define( [ "jquery", "./jquery.mobile.core", "./jquery.mobile.support", "./jquery
 			//remove initial build class (only present on first pageshow)
 			hideRenderingClass();
 
-			// if hashchange listening is disabled or there's no hash deeplink, change to the first page in the DOM
-			if ( !$.mobile.hashListeningEnabled || !$.mobile.path.stripHash( location.hash ) ) {
-				$.mobile.changePage( $.mobile.firstPage, { transition: "none", reverse: true, changeHash: false, fromHashChange: true } );
-			}
-			// otherwise, trigger a hashchange to load a deeplink
-			else {
+			// if hashchange listening is disabled, there's no hash deeplink,
+			// the hash is not valid (contains more than one # or does not start with #)
+			// or there is no page with that hash, change to the first page in the DOM
+			// Remember, however, that the hash can also be a path!
+			if ( ! ( $.mobile.hashListeningEnabled &&
+				$.mobile.path.isHashValid( location.hash ) &&
+				( $( hashPage ).is( ':jqmData(role="page")' ) ||
+					$.mobile.path.isPath( hash ) ||
+					hash === $.mobile.dialogHashKey ) ) ) {
+
+				// Store the initial destination
+				if ( $.mobile.path.isHashValid( location.hash ) ) {
+					$.mobile.urlHistory.initialDst = hash.replace( "#", "" );
+				}
+
+				$.mobile.changePage( $.mobile.firstPage, {
+					transition: "none",
+					reverse: true,
+					changeHash: false,
+					fromHashChange: true
+				});
+			} else {
+				// otherwise, trigger a hashchange to load a deeplink
 				$window.trigger( "hashchange", [ true ] );
 			}
 		}
 	});
 
 	// initialize events now, after mobileinit has occurred
-	$.mobile._registerInternalEvents();
+	$.mobile.navreadyDeferred.resolve();
 
 	// check which scrollTop value should be used by scrolling to 1 immediately at domready
 	// then check what the scroll top is. Android will report 0... others 1
@@ -100,27 +122,29 @@ define( [ "jquery", "./jquery.mobile.core", "./jquery.mobile.support", "./jquery
 		// if defaultHomeScroll hasn't been set yet, see if scrollTop is 1
 		// it should be 1 in most browsers, but android treats 1 as 0 (for hiding addr bar)
 		// so if it's 1, use 0 from now on
-		$.mobile.defaultHomeScroll = ( !$.support.scrollTop || $(window).scrollTop() === 1 ) ? 0 : 1;
-
-
-		// TODO: Implement a proper registration mechanism with dependency handling in order to not have exceptions like the one below
-		//auto self-init widgets for those widgets that have a soft dependency on others
-		if ( $.fn.controlgroup ) {
-			$( document ).bind( "pagecreate create", function( e ){
-				$( ":jqmData(role='controlgroup')", e.target )
-					.jqmEnhanceable()
-					.controlgroup({ excludeInvisible: false });
-			});
-		}
+		$.mobile.defaultHomeScroll = ( !$.support.scrollTop || $( window ).scrollTop() === 1 ) ? 0 : 1;
 
 		//dom-ready inits
-		if( $.mobile.autoInitializePage ){
+		if ( $.mobile.autoInitializePage ) {
 			$.mobile.initializePage();
 		}
 
 		// window load event
 		// hide iOS browser chrome on load
 		$window.load( $.mobile.silentScroll );
+
+		if ( !$.support.cssPointerEvents ) {
+			// IE and Opera don't support CSS pointer-events: none that we use to disable link-based buttons
+			// by adding the 'ui-disabled' class to them. Using a JavaScript workaround for those browser.
+			// https://github.com/jquery/jquery-mobile/issues/3558
+
+			$( document ).delegate( ".ui-disabled", "vclick",
+				function( e ) {
+					e.preventDefault();
+					e.stopImmediatePropagation();
+				}
+			);
+		}
 	});
 }( jQuery, this ));
 //>>excludeStart("jqmBuildExclude", pragmas.jqmBuildExclude);

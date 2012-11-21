@@ -27,7 +27,7 @@
 		scrollUp();
 
 		setTimeout(function(){
-			same($(window).scrollTop(), 0);
+			deepEqual($(window).scrollTop(), 0);
 			start();
 		}, scrollTimeout);
 	});
@@ -37,15 +37,9 @@
 		scrollUp(pos);
 
 		setTimeout(function(){
-			same($(window).scrollTop(), pos);
+			deepEqual($(window).scrollTop(), pos);
 			start();
 		}, scrollTimeout);
-	});
-
-	test( "silent scroll is async", function(){
-		scrollUp();
-		ok($(window).scrollTop() != 0, "scrolltop position should not be zero");
-		start();
 	});
 
 	asyncTest( "scrolling marks scrollstart as disabled for 150 ms", function(){

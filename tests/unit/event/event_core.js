@@ -3,12 +3,13 @@
  */
 
 (function($){
-	var libName = "jquery.mobile.event.js",
-			absFn = Math.abs,
-			originalEventFn = $.Event.prototype.originalEvent,
-			preventDefaultFn = $.Event.prototype.preventDefault,
-			events = ("touchstart touchmove touchend orientationchange tap taphold " +
-								"swipe swipeleft swiperight scrollstart scrollstop").split( " " );
+	var libName = "jquery.mobile.events.js",
+	    components = [ "events/touch.js", "events/throttledresize.js", "events/orientationchange.js" ],
+	    absFn = Math.abs,
+	    originalEventFn = $.Event.prototype.originalEvent,
+	    preventDefaultFn = $.Event.prototype.preventDefault,
+	    events = ("touchstart touchmove touchend tap taphold " +
+		          "swipe swipeleft swiperight scrollstart scrollstop orientationchange").split( " " );
 
 	module(libName, {
 		setup: function(){
@@ -35,13 +36,13 @@
 		test( "new events defined on the jquery object", function(){
 			$.each(events, function( i, name ) {
 				delete $.fn[name];
-				same($.fn[name], undefined);
+				deepEqual($.fn[name], undefined);
 			});
 
-			$.testHelper.reloadLib(libName);
+			$.each( components, function( index, value ) { $.testHelper.reloadLib( value ); });
 
 			$.each(events, function( i, name ) {
-				ok($.fn[name] !== undefined, name + " is not undefined");
+				ok( $.fn[name] !== undefined, name + " should NOT be undefined");
 			});
 		});
 	});
@@ -68,15 +69,19 @@
 		$('#qunit-fixture').touchstart();
 	});
 
-	test( "defining event functions sets the attrFn to true", function(){
-		$.each(events, function(i, name){
-			ok($.attrFn[name], "attribute function is true");
+	// jQuery < 1.8
+	if ( $.attrFn ) {
+		test( "defining event functions sets the attrFn to true", function(){
+			$.each( events, function( index, name ) {
+				ok( $.attrFn[ name ], "attribute function is true" );
+			});
 		});
-	});
+	}
+
 
 	test( "scrollstart enabled defaults to true", function(){
 		$.event.special.scrollstart.enabled = false;
-		$.testHelper.reloadLib(libName);
+		$.each( components, function( index, value ) { $.testHelper.reloadLib( value ); });
 		ok($.event.special.scrollstart.enabled, "scrollstart enabled");
 	});
 
@@ -126,8 +131,9 @@
 	});
 
 	var forceTouchSupport = function(){
-		$.support.touch = true;
-		$.testHelper.reloadLib(libName);
+		document.ontouchend = function() {};
+		$.testHelper.reloadLib( "jquery.mobile.support.touch.js" );
+		$.each( components, function( index, value ) { $.testHelper.reloadLib( value ); });
 
 		//mock originalEvent information
 		$.Event.prototype.originalEvent = {
@@ -150,7 +156,7 @@
 
 		setTimeout(function(){
 			ok( !taphold, "taphold not fired" );
-			same( target, undefined, "taphold target should be #qunit-fixture" );
+			deepEqual( target, undefined, "taphold target should be #qunit-fixture" );
 		}, $.event.special.tap.tapholdThreshold - 10);
 
 
@@ -253,11 +259,11 @@
 			$qf = $( "#qunit-fixture" ),
 			$doc = $( document ),
 			docTapCB = function(){
-				same(++tap, 2, "document tap callback called once after #qunit-fixture callback");
+				deepEqual(++tap, 2, "document tap callback called once after #qunit-fixture callback");
 			};
 
 		$qf.bind( "tap", function() {
-			same(++tap, 1, "#qunit-fixture tap callback called once");
+			deepEqual(++tap, 1, "#qunit-fixture tap callback called once");
 		});
 
 		$doc.bind( "tap", docTapCB );
@@ -268,7 +274,7 @@
 
 		// tap binding should be triggered twice, once for
 		// #qunit-fixture, and a second time for document.
-		same( tap, 2, "final tap callback count is 2" );
+		deepEqual( tap, 2, "final tap callback count is 2" );
 
 		$doc.unbind( "tap", docTapCB );
 
@@ -284,11 +290,11 @@
 			};
 
 		$qf.bind( "tap", function(e) {
-			same(++tap, 1, "tap callback 1 triggered once on #qunit-fixture");
+			deepEqual(++tap, 1, "tap callback 1 triggered once on #qunit-fixture");
 			e.stopPropagation();
 		})
 		.bind( "tap", function(e) {
-			same(++tap, 2, "tap callback 2 triggered once on #qunit-fixture");
+			deepEqual(++tap, 2, "tap callback 2 triggered once on #qunit-fixture");
 		});
 
 		$doc.bind( "tap", docTapCB);
@@ -298,7 +304,7 @@
 			.trigger( "vclick" );
 
 		// tap binding should be triggered twice.
-		same( tap, 2, "final tap count is 2" );
+		deepEqual( tap, 2, "final tap count is 2" );
 
 		$doc.unbind( "tap", docTapCB );
 
@@ -316,7 +322,7 @@
 		// Bind 2 tap callbacks on qunit-fixture. Only the first
 		// one should ever be called.
 		$cf.bind( "tap", function(e) {
-			same(++tap, 1, "tap callback 1 triggered once on #qunit-fixture");
+			deepEqual(++tap, 1, "tap callback 1 triggered once on #qunit-fixture");
 			e.stopImmediatePropagation();
 		})
 		.bind( "tap", function(e) {
@@ -330,7 +336,7 @@
 			.trigger( "vclick" );
 
 		// tap binding should be triggered once.
-		same( tap, 1, "final tap count is 1" );
+		deepEqual( tap, 1, "final tap count is 1" );
 
 		$doc.unbind( "tap", docTapCB );
 
@@ -348,7 +354,10 @@
 
 		//NOTE bypass the trigger source check
 		$.Event.prototype.originalEvent = {
-			touches: false
+			touches: [{
+				pageX: 0,
+				pageY: 0
+			}]
 		};
 
 		$( "#qunit-fixture" ).trigger("touchstart");
@@ -363,7 +372,7 @@
 		}, opts.timeout + 100);
 
 		setTimeout(function(){
-			same(swipe, opts.expected, "swipe expected");
+			deepEqual(swipe, opts.expected, "swipe expected");
 			start();
 		}, opts.timeout + 200);
 
@@ -394,19 +403,29 @@
 		// ensure the swipe custome event is setup
 		$( "#qunit-fixture" ).bind('swipe', function(){});
 
-		//NOTE bypass the trigger source check
-		$.Event.prototype.originalEvent = {
-			touches: false
-		};
-
 		$.Event.prototype.preventDefault = function(){
 			ok(true, "prevent default called");
 			start();
 		};
 
-		mockAbs(11);
+		//NOTE bypass the trigger source check
+		$.Event.prototype.originalEvent = {
+			touches: [{
+				pageX: 0,
+				pageY: 0
+			}]
+		};
 
 		$( "#qunit-fixture" ).trigger("touchstart");
+
+		//NOTE bypass the trigger source check
+		$.Event.prototype.originalEvent = {
+			touches: [{
+				pageX: 200,
+				pageY: 0
+			}]
+		};
+
 		$( "#qunit-fixture" ).trigger("touchmove");
 	});
 
@@ -440,7 +459,7 @@
 
 	var nativeSupportTest = function(opts){
 		$.support.orientation = opts.orientationSupport;
-		same($.event.special.orientationchange[opts.method](), opts.returnValue);
+		deepEqual($.event.special.orientationchange[opts.method](), opts.returnValue);
 	};
 
 	test( "orientation change setup should do nothing when natively supported", function(){
@@ -486,29 +505,27 @@
 		$( window ).trigger( "resize" );
 	});
 
-	asyncTest( "throttledresize event prevents resize events from firing more frequently than 250ms", function(){
+	asyncTest( "throttledresize event prevents resize events from firing more frequently than one per 250ms", function(){
 		var called = 0;
 
 		$(window).bind( "throttledresize", function(){
 			called++;
 		});
 
-		// NOTE 250 ms * 3 = 750ms which is plenty of time
-		// for the events to trigger before the next test, but
-		// not so much time that the second resize will be triggered
-		// before the call to same() is made
+		// NOTE 400 ms between two triggers and the check for one callback
+		// is enough time for the first to fire but not enough for a second
 		$.testHelper.sequence([
 			function(){
 				$(window).trigger( "resize" ).trigger( "resize" );
 			},
 
 			// verify that only one throttled resize was called after 250ms
-			function(){ same( called, 1 ); },
+			function(){ deepEqual( called, 1 ); },
 
 			function(){
 				start();
 			}
-		], 250);
+		], 400);
 	});
 
 	asyncTest( "throttledresize event promises that a held call will execute only once after throttled timeout", function(){
@@ -538,7 +555,7 @@
 
 	asyncTest( "mousedown mouseup and click events should add a which when its not defined", function() {
 		var whichDefined = function( event ){
-			same(event.which, 1);
+			deepEqual(event.which, 1);
 		};
 
 		$( document ).bind( "vclick", whichDefined);
@@ -548,7 +565,7 @@
 		$( document ).trigger( "mousedown" );
 
 		$( document ).bind( "vmouseup", function( event ){
-			same(event.which, 1);
+			deepEqual(event.which, 1);
 			start();
 		});
 

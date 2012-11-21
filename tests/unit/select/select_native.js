@@ -13,7 +13,7 @@
 
 			select.val( key ).selectmenu( 'refresh' );
 			text = select.find( "option[value='" + key + "']" ).text();
-			same( select.parent().find(".ui-btn-text").text(), text );
+			deepEqual( select.parent().find(".ui-btn-text").text(), text );
 		};
 
 		setAndCheck( 'rush' );
@@ -51,11 +51,11 @@
 			button = select.siblings( "a" ).find( ".ui-btn-inner" ),
 			text = "foo";
 
-		same($.trim(button.text()), "default");
+		deepEqual($.trim(button.text()), "default");
 		select.find( "option" ).remove(); //remove the loading message
 		select.append('<option value="1">' + text + '</option>');
 		select.selectmenu( 'refresh' );
-		same($.trim(button.text()), text);
+		deepEqual($.trim(button.text()), text);
 	});
 
 	// issue 2424
@@ -76,11 +76,13 @@
 				ok( $.mobile.zoom.enabled === false, "zoom is disabled on vmousedown" );
 			})
 			.one("mouseup.test", function(){
-				ok( $.mobile.zoom.enabled === true, "zoom is enabled on mouseup" );
-				$.mobile.selectmenu.prototype.options.preventFocusZoom = zoomoptiondefault;
-				$(document).unbind(".test");
-				$( "#select-choice-native" ).selectmenu( "option", "preventFocusZoom", zoomoptiondefault )
-				start();
+				setTimeout(function() { // This empty setTimeout is to match the work-around for the issue reported in https://github.com/jquery/jquery-mobile/issues/5041
+					ok( $.mobile.zoom.enabled === true, "zoom is enabled on mouseup" );
+					$.mobile.selectmenu.prototype.options.preventFocusZoom = zoomoptiondefault;
+					$(document).unbind(".test");
+					$( "#select-choice-native" ).selectmenu( "option", "preventFocusZoom", zoomoptiondefault );
+					start();
+				}, 0);
 		});
 
 		$( "#select-choice-native" )

@@ -115,7 +115,6 @@
 
 			function() {
 				onToComplete( function( el ) {
-					console.log( $("body").attr("class") );
 					ok($("body").hasClass(perspective), "has viewport-flip or viewport-fade based on 3d transform");
 					start();
 				});
@@ -207,7 +206,7 @@
 
 	test( "animationComplete return value", function(){
 		$.fn.animationComplete = animationCompleteFn;
-		equals($("#foo").animationComplete(function(){})[0], $("#foo")[0]);
+		equal($("#foo").animationComplete(function(){})[0], $("#foo")[0]);
 	});
 
 

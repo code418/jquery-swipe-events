@@ -4,15 +4,20 @@
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
 }
 
+.ui-page-pre-in {
+	opacity: 0;
+}
 .in {
 	-webkit-animation-timing-function: ease-out;
 	-webkit-animation-duration: 350ms;
 	-moz-animation-timing-function: ease-out;
 	-moz-animation-duration: 350ms;
 }
-
 .out {
 	-webkit-animation-timing-function: ease-in;
 	-webkit-animation-duration: 225ms;

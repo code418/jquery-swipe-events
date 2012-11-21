@@ -9,33 +9,18 @@
 		baseUrl = myScriptTag.src.replace( /(.*)\/.*$/, "$1/" ),
 		url = baseUrl + "jquery.js";
 
-	if( results ) {
+	if ( results ) {
 		version = decodeURIComponent(results[results.length - 1].replace(/\+/g, " "));
-
-		switch( version ) {
-			// Local versions
-			case "1.6.4":
-			case "1.7.1":
-			case "1.7.2":
-				url = baseUrl + "jquery-" + version + ".js";
-				break;
-			// CDN versions
-			default:
-				url = "http://code.jquery.com/jquery-"+version+".js";
-				break;
-		}
-	} 
+		url = "http://code.jquery.com/jquery-"+version+".js";
+	}
 
 	document.write( "<script src='" + url + "'></script>" );
 
-	document.write( 
+	document.write(
 		'<script>' +
-			'console.warn( "jQuery version: " + jQuery.fn.jquery );' +
-			'if ( parseInt( jQuery.fn.jquery.replace( /\\./g, "" ), 10 ) < 170 && window.define && window.define.amd ) {' +
-			    'console.warn( "Exporting \'jquery\' AMD module" );' +
+			'if ( window.jQuery && parseInt( jQuery.fn.jquery.replace( /\\./g, "" ), 10 ) < 170 && window.define && window.define.amd ) {' +
 			    'define( "jquery", [], function () { return jQuery; } );'+
 			'}'+
-		'</script>' 
+		'</script>'
 	);
-
 }());

@@ -70,7 +70,7 @@
 	asyncTest( "radio button labels should update the active button class to last clicked and clear checked", function(){
 		var $radioBtns = $( '#radio-active-btn-test input' ),
 			singleActiveAndChecked = function(){
-				same( $( "#radio-active-btn-test .ui-radio-on" ).length, 1, "there should be only one active button" );
+				deepEqual( $( "#radio-active-btn-test .ui-radio-on" ).length, 1, "there should be only one active button" );
 				// Use the .checked property, not the checked attribute which is not dynamic
 				var numChecked = 0;
 				$( "#radio-active-btn-test input" ).each(function(i, e) {
@@ -78,7 +78,7 @@
 						numChecked++;
 					}
 				});
-				same( numChecked, 1, "there should be only one checked" );
+				deepEqual( numChecked, 1, "there should be only one checked" );
 			};
 
 		$.testHelper.sequence([
@@ -201,7 +201,9 @@
 			},
 
 			function( timeout ){
-				ok( location.search.indexOf("radio1=1") >= 0, "the radio was checked" );
+				var check = location.hash || location.search;
+
+				ok( check.indexOf("radio1=1") >= 0, "the radio was checked" );
 
 				// if the changepage in the previous function failed don't go back
 				if( !timeout ){
@@ -225,8 +227,10 @@
 			},
 
 			function( timeout ){
-				ok( location.search.indexOf("checkbox-form=on") >= 0, "the first checkbox was checked" );
-				ok( location.search.indexOf("checkbox-form-2=on") >= 0, "the second checkbox was checked" );
+				var check = location.hash || location.search;
+
+				ok( check.indexOf("checkbox-form=on") >= 0, "the first checkbox was checked" );
+				ok( check.indexOf("checkbox-form-2=on") >= 0, "the second checkbox was checked" );
 				// if the changepage in the previous function failed don't go back
 				if( !timeout ){
 					window.history.back();

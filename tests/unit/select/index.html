@@ -13,8 +13,8 @@
 	<script>
 		$.testHelper.asyncLoad([
 			[
-				"jquery.mobile.forms.select",
-				"jquery.mobile.forms.select.custom",
+				"widgets/forms/select",
+				"widgets/forms/select.custom",
 				"defineKeepNative.js"
 			],
 			[ "jquery.mobile.init" ],
@@ -83,6 +83,23 @@
 			<option value="rush">Rush: 3 days</option>
 			<option value="express">Express: next day</option>
 			<option value="overnight">Overnight</option>
+		</select>
+	</div>
+
+	<div data-nstest-role="fieldcontain" id="select-choice-menu-focus-test">
+		<select name="select-choice-menu-focus-test" id="select-choice-menu-focus-test"  data-nstest-native-menu="false">
+			<option value="standard">Standard: 7 day</option>
+			<option value="rush">Rush: 3 days</option>
+			<option value="express">Express: next day</option>
+			<option value="overnight">Overnight</option>
+		</select>
+	</div>
+
+	<div data-nstest-role="popup" id="popup-containing-select">
+		<select name="select-choice-inside-popup" id="select-choice-inside-popup" data-nstest-native-menu="false">
+			<option value="abracadabra">Abracadabra</option>
+			<option value="simsalabim">Simsalabim</option>
+			<option value="csiribu-csiriba">Csiribu-Csiriba</option>
 		</select>
 	</div>
 
@@ -383,10 +400,6 @@
 	</div>
 
 	<select name="select-disabled-enhancetest" id="select-disabled-enhancetest" disabled="disabled" data-nstest-native-menu="false">
-		<option value="standard">Standard: 7 day</option>
-		<option value="rush">Rush: 3 days</option>
-		<option value="express">Express: next day</option>
-		<option value="overnight">Overnight</option>
 		<option value="overnight">disabled enhance test</option>
 	</select>
 
@@ -419,6 +432,11 @@
 	</select>
 </div>
 
+<div data-nstest-role="page" id="destroyTest">
+</div>
+
+<div data-nstest-role="page" id="destroyTestCustom">
+</div>
 
 <div id="enhancetest">
 	<select name="select-enhancetest" id="select-enhancetest">
